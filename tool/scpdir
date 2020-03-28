@@ -1,0 +1,35 @@
+#!/usr/bin/env python2
+import os
+import sys
+import getpass
+import socket
+import struct
+import fcntl
+
+def get_user():
+    return getpass.getuser()
+
+def get_ip(ifname="eth0"):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl( s.fileno(),
+                                         0x8915,
+                                         struct.pack('256s', ifname[:15])
+                                        )[20:24])
+
+if __name__ == '__main__':
+
+    usr = get_user()
+    ip = get_ip()
+    dir_name = os.getcwd()
+    if len(sys.argv) > 1:
+        dir_name = os.path.join(dir_name, sys.argv[1])
+    res = 'scp '
+    if os.path.isdir(dir_name):
+        res += '-r '
+    if not os.path.exists(dir_name):
+        print "%s does not exist" % dir_name
+        exit(1)
+    res += usr + '@' + ip + ':' + dir_name + ' ./'
+    print(res)
+
+
