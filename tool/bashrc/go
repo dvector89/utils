@@ -21,9 +21,9 @@ function go() {
         if [[ $key == -h ]]; then
             echo "Usage: go [-key] [path]"
             echo "       go [-key]"
-	    echo ""
-	    echo "saved dirs"
-	    cat $dir_map_file
+            echo ""
+            echo "saved dirs"
+            cat $dir_map_file
         elif [[ $key == -* ]]; then
             key=${key:1}
             if [ -f "$dir_map_file" ] && grep -q "^$key:" "$dir_map_file"; then
@@ -43,9 +43,11 @@ function go() {
             key=${key:1}
             # 删除旧的条目（如果存在）
             sed -i "/^$key:/d" "$dir_map_file" 2> /dev/null
-            # 添加新条目
+        if [ -d "$path" ]; then
+            path=$(realpath "$path")
+            cd $path
             echo "$key:$path" >> "$dir_map_file"
-            cd "$path" || echo "Failed to change directory."
+        fi
         else
             echo "Invalid key format. Key should start with a dash (-)."
         fi
