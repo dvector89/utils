@@ -1,62 +1,55 @@
-# Bash函数：go
+# Bash function: go
 function go() {
-    # 定义用于存储标记和路径的文件
     local dir_map_file="$HOME/.go_dirs"
+    local shortcut_key='0'
 
-    # 默认标记为 '0'
-    local key='0'
-
-    # 检查参数数量
     if [ $# -eq 0 ]; then
-        # 没有参数：使用默认标记进行跳转
-        if [ -f "$dir_map_file" ] && grep -q "^$key:" "$dir_map_file"; then
-            local dir=$(grep "^$key:" "$dir_map_file" | cut -d':' -f2-)
-            cd "$dir" || echo "Directory does not exist."
-        else
-            echo "No directory stored for default key."
-        fi
+        navigate_to_directory "$shortcut_key"
     elif [ $# -eq 1 ]; then
-        # 一个参数：跳转到指定标记的目录
-        key=$1
-        if [[ $key == -h ]]; then
-            echo "Usage: go [-key] [path]"
-            echo "       go [-key]"
-            echo ""
-            echo "saved dirs"
-            cat $dir_map_file
-        elif [[ $key == -* ]]; then
-            key=${key:1}
-            if [ -f "$dir_map_file" ] && grep -q "^$key:" "$dir_map_file"; then
-                local dir=$(grep "^$key:" "$dir_map_file" | cut -d':' -f2-)
-                cd "$dir" || echo "Directory does not exist."
-            else
-                echo "No directory stored for key $key."
-            fi
+        shortcut_key=$1
+        if [[ $shortcut_key == -h ]]; then
+            display_usage_and_saved_dirs
+        elif [[ $shortcut_key == -* ]]; then
+            shortcut_key=${shortcut_key:1}
+            navigate_to_directory "$shortcut_key"
         else
             echo "Invalid key format. Key should start with a dash (-)."
         fi
     elif [ $# -eq 2 ]; then
-        # 两个参数：存储标记和路径
-        key=$1
-        local path=$2
-        if [[ $key == -* ]]; then
-            key=${key:1}
-            # 删除旧的条目（如果存在）
-            sed -i "/^$key:/d" "$dir_map_file" 2> /dev/null
-        if [ -d "$path" ]; then
-            path=$(realpath "$path")
-            cd $path
-            echo "$key:$path" >> "$dir_map_file"
-        fi
-        else
-            echo "Invalid key format. Key should start with a dash (-)."
-        fi
+        store_directory_path "$@"
     else
-        # 参数过多
         echo "Usage: go [-key] [path]"
         echo "       go [-key]"
     fi
 }
 
-# 将此函数添加到您的.bashrc或.zshrc文件中，以便在每次打开终端时都能使用它。
+function navigate_to_directory() {
+    local key=$1
+    if [ -f "$dir_map_file" ] && grep -q "^$key:" "$dir_map_file"; then
+        local target_directory=$(grep "^$key:" "$dir_map_file" | cut -d':' -f2-)
+        cd "$target_directory" || echo "Directory does not exist."
+    else
+        echo "No directory stored for key $key."
+    fi
+}
+
+function store_directory_path() {
+    local key=${1:1}
+    local path=$2
+    if [ -d "$path" ]; then
+        path=$(realpath "$path")
+        sed -i "/^$key:/d" "$dir_map_file" 2> /dev/null
+        echo "$key:$path" >> "$dir_map_file"
+    else
+        echo "Invalid directory: $path"
+    fi
+}
+
+function display_usage_and_saved_dirs() {
+    echo "Usage: go [-key] [path]"
+    echo "       go [-key]"
+    echo ""
+    echo "Saved directories:"
+    cat "$dir_map_file"
+}
 
