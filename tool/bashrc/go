@@ -1,0 +1,60 @@
+# Bash函数：go
+function go() {
+    # 定义用于存储标记和路径的文件
+    local dir_map_file="$HOME/.go_dirs"
+
+    # 默认标记为 '0'
+    local key='0'
+
+    # 检查参数数量
+    if [ $# -eq 0 ]; then
+        # 没有参数：使用默认标记进行跳转
+        if [ -f "$dir_map_file" ] && grep -q "^$key:" "$dir_map_file"; then
+            local dir=$(grep "^$key:" "$dir_map_file" | cut -d':' -f2-)
+            cd "$dir" || echo "Directory does not exist."
+        else
+            echo "No directory stored for default key."
+        fi
+    elif [ $# -eq 1 ]; then
+        # 一个参数：跳转到指定标记的目录
+        key=$1
+        if [[ $key == -h ]]; then
+            echo "Usage: go [-key] [path]"
+            echo "       go [-key]"
+	    echo ""
+	    echo "saved dirs"
+	    cat $dir_map_file
+        elif [[ $key == -* ]]; then
+            key=${key:1}
+            if [ -f "$dir_map_file" ] && grep -q "^$key:" "$dir_map_file"; then
+                local dir=$(grep "^$key:" "$dir_map_file" | cut -d':' -f2-)
+                cd "$dir" || echo "Directory does not exist."
+            else
+                echo "No directory stored for key $key."
+            fi
+        else
+            echo "Invalid key format. Key should start with a dash (-)."
+        fi
+    elif [ $# -eq 2 ]; then
+        # 两个参数：存储标记和路径
+        key=$1
+        local path=$2
+        if [[ $key == -* ]]; then
+            key=${key:1}
+            # 删除旧的条目（如果存在）
+            sed -i "/^$key:/d" "$dir_map_file" 2> /dev/null
+            # 添加新条目
+            echo "$key:$path" >> "$dir_map_file"
+            cd "$path" || echo "Failed to change directory."
+        else
+            echo "Invalid key format. Key should start with a dash (-)."
+        fi
+    else
+        # 参数过多
+        echo "Usage: go [-key] [path]"
+        echo "       go [-key]"
+    fi
+}
+
+# 将此函数添加到您的.bashrc或.zshrc文件中，以便在每次打开终端时都能使用它。
+
